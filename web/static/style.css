@@ -1,0 +1,543 @@
+/* 종합계좌 PWA — 계좌별 보유·배당·성과 관리.
+   위쪽은 공용 디자인 토큰·클래스, 아래쪽은 이 앱에만 필요한 것.
+   한국 증권 관행에 맞춰 상승·수익=빨강, 하락·손실=파랑. */
+:root{
+  color-scheme: light;
+  --bg:#f4f5f7; --surface:#ffffff; --surface2:#f0f1f4;
+  --line:#e3e5ea; --line2:#eef0f3;
+  --ink:#14161a; --ink2:#525a66; --ink3:#8a919d;
+  --up:#d1453b;     /* 상승·매수·수익 */
+  --up-bg:rgba(209,69,59,.10);
+  --down:#2d6cdf;   /* 하락·매도·손실 */
+  --down-bg:rgba(45,108,223,.10);
+  --warn:#9a6a11; --warn-bg:rgba(214,152,26,.14);
+  --brand:#3b3f4a;
+  --radius:16px;
+  --shadow:0 1px 2px rgba(20,22,26,.05),0 10px 28px -14px rgba(20,22,26,.22);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --bg:#0f1114; --surface:#191c21; --surface2:#20242b;
+  --line:#2d323a; --line2:#23272e;
+  --ink:#f2f4f7; --ink2:#c0c7d1; --ink3:#868e9b;
+  --up:#f4695e; --up-bg:rgba(244,105,94,.14);
+  --down:#6a9bf0; --down-bg:rgba(106,155,240,.14);
+  --warn:#e0b45f; --warn-bg:rgba(224,180,95,.15);
+  --brand:#c8cdd6;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:contain;
+}
+.hidden{display:none!important}
+.mono,.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* 로그인 */
+.gate{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:var(--bg);z-index:50}
+.gate-box{width:100%;max-width:340px;text-align:center}
+.gate-box h1{font-size:1.5rem;margin:0 0 6px;letter-spacing:-.02em}
+.gate-box p{color:var(--ink3);font-size:.88rem;margin:0 0 20px}
+.gate-box input{width:100%;margin-bottom:12px}
+
+/* 상단 */
+.top{
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 12px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  border-bottom:1px solid var(--line);
+}
+.top h1{font-size:1.28rem;margin:0;letter-spacing:-.025em;font-weight:700}
+.top .sub{margin:2px 0 0;color:var(--ink3);font-size:.79rem}
+.icon-btn{
+  background:var(--surface);border:1px solid var(--line);color:var(--ink2);
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  cursor:pointer;flex:none;
+}
+.icon-btn:active{transform:scale(.94)}
+.icon-btn.spin svg{animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+main{padding:14px 14px calc(84px + var(--safe-b))}
+.tab{display:none}.tab.active{display:block}
+
+/* 카드 */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 17px;margin-bottom:12px;box-shadow:var(--shadow);
+}
+.card h2{font-size:.95rem;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
+.hint{font-size:.79rem;color:var(--ink3);margin:0 0 12px;line-height:1.5}
+.foot{font-size:.76rem;color:var(--ink3);margin:-4px 2px 14px}
+
+/* 종목 카드 */
+.tk-head{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tk-sym{font-size:1.18rem;font-weight:700;letter-spacing:-.02em}
+.tk-name{font-size:.76rem;color:var(--ink3)}
+.tk-badge{margin-left:auto;font-size:.68rem;font-weight:600;padding:3px 9px;
+  border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+.tk-px{display:flex;align-items:baseline;gap:9px;margin-bottom:14px}
+.tk-px b{font-size:1.5rem;font-weight:700;letter-spacing:-.03em}
+.tk-px .chg{font-size:.86rem;font-weight:600}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--ink3)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:11px 8px;
+  padding:13px 0;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2)}
+.g-item{min-width:0}
+.g-k{font-size:.7rem;color:var(--ink3);display:block}
+.g-v{font-size:.98rem;font-weight:650;display:block;letter-spacing:-.01em}
+.g-s{font-size:.7rem;color:var(--ink3);display:block;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+
+.prog{margin:13px 0 4px}
+.prog-h{display:flex;justify-content:space-between;font-size:.76rem;color:var(--ink3);margin-bottom:6px}
+.prog-h b{color:var(--ink)}
+.bar{height:7px;background:var(--line2);border-radius:99px;overflow:hidden}
+.bar span{display:block;height:100%;border-radius:99px;background:var(--brand);transition:width .4s}
+
+/* 주문 */
+.orders{margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.ord{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;
+  background:var(--surface2)}
+.ord .tag{font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:6px;flex:none}
+.ord.buy .tag{background:var(--up-bg);color:var(--up)}
+.ord.sell .tag{background:var(--down-bg);color:var(--down)}
+.ord .lbl{font-size:.79rem;color:var(--ink2);flex:none}
+.ord .val{margin-left:auto;text-align:right;white-space:nowrap}
+.ord .val b{font-size:.98rem;font-weight:650}
+.ord .val span{font-size:.74rem;color:var(--ink3);display:block}
+.note{font-size:.76rem;color:var(--ink3);margin:11px 0 0;padding-left:11px;
+  border-left:2px solid var(--line);line-height:1.5}
+
+/* 버튼 */
+.btn{
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:12px;padding:12px 16px;font-size:.9rem;font-weight:600;
+  font-family:inherit;cursor:pointer;
+}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.ghost{background:transparent;color:var(--ink2)}
+.btn.full{width:100%;margin-top:8px}
+.btn:disabled{opacity:.5}
+.btn-report{width:100%;margin-top:12px}
+
+input,select{
+  font-family:inherit;font-size:1rem;padding:11px 13px;border-radius:11px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;
+}
+input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px}
+label{display:block;font-size:.78rem;color:var(--ink3);margin-bottom:10px}
+/* select 과 textarea 도 input 과 같은 간격을 준다. 빠뜨리면 자산군·배당시기
+   드롭다운만 라벨 글자에 붙어 보인다. .lb 는 시트에서 라벨 글자만 갈아 끼우려고
+   쓰는 span 이라 블록으로 잡아줘야 아래 입력칸과 줄이 나뉜다. */
+label input,label select,label textarea{margin-top:5px}
+label .lb{display:block}
+.row{display:flex;gap:8px;align-items:center}
+.row input{flex:1}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 15px;box-shadow:var(--shadow)}
+.kpi .k{font-size:.72rem;color:var(--ink3);display:block}
+.kpi .v{font-size:1.32rem;font-weight:700;letter-spacing:-.03em;display:block;margin-top:1px}
+.kpi .s{font-size:.71rem;color:var(--ink3);display:block}
+
+/* 목록 */
+.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line2)}
+.item:last-child{border-bottom:none}
+.item .l{min-width:0;flex:1}
+.item .t1{font-size:.88rem;font-weight:600}
+.item .t2{font-size:.73rem;color:var(--ink3)}
+.item .r{text-align:right;white-space:nowrap}
+.item .r b{font-size:.94rem;font-weight:650}
+.item .r span{font-size:.73rem;color:var(--ink3);display:block}
+
+.notice{background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--brand);border-radius:12px;padding:13px 15px;
+  margin-bottom:12px;font-size:.85rem;color:var(--ink2)}
+.notice b{color:var(--ink)}
+.empty{text-align:center;color:var(--ink3);font-size:.83rem;padding:22px 0}
+.err{color:var(--up);font-size:.8rem;margin:8px 0 0;min-height:1em}
+.msg{color:var(--ink3);font-size:.8rem;margin:8px 0 0;min-height:1em}
+.disclaimer{font-size:.72rem;color:var(--ink3);margin:18px 4px 0;line-height:1.55}
+.kv{display:flex;flex-direction:column;gap:7px}
+.kv div{display:flex;justify-content:space-between;font-size:.84rem}
+.kv div span:first-child{color:var(--ink3)}
+
+/* 차트 */
+.chart-card h2{margin-bottom:10px}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart .gl{stroke:var(--line2);stroke-width:1}
+.chart .zl{stroke:var(--ink3);stroke-width:1;stroke-dasharray:3 3;opacity:.6}
+.chart .tk{fill:var(--ink3);font-size:10px;font-family:'IBM Plex Mono',monospace}
+.chart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .bandp{fill:var(--up-bg)}
+.chart .dot{stroke:var(--surface);stroke-width:2}
+.legend{display:flex;gap:13px;flex-wrap:wrap;font-size:.74rem;color:var(--ink2);margin-bottom:8px}
+.legend i{width:12px;height:3px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* 하단 탭 */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;
+  grid-auto-flow:column;grid-auto-columns:1fr;
+  background:color-mix(in srgb,var(--surface) 92%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding-bottom:var(--safe-b);
+}
+.tabbar button{
+  background:none;border:none;color:var(--ink3);font-family:inherit;
+  font-size:.75rem;font-weight:600;padding:12px 0 11px;cursor:pointer;
+}
+.tabbar button.active{color:var(--ink)}
+.tabbar button:active{opacity:.6}
+
+/* 시트 */
+.sheet-wrap{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(2px)}
+.sheet{
+  position:relative;width:100%;background:var(--surface);
+  border-radius:22px 22px 0 0;padding:10px 18px calc(20px + var(--safe-b));
+  box-shadow:0 -8px 40px rgba(0,0,0,.28);animation:up .22s ease-out;
+  max-height:88vh;overflow-y:auto;
+}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-grip{width:38px;height:4px;background:var(--line);border-radius:9px;margin:0 auto 14px}
+.sheet h2{font-size:1.05rem;margin:0 0 14px}
+.sheet-btns{display:grid;grid-template-columns:1fr 1.6fr;gap:9px;margin-top:6px}
+
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface2);
+  padding:4px;border-radius:12px;margin-bottom:12px}
+.seg.small{grid-template-columns:1fr 1fr}
+.seg button{
+  background:none;border:none;border-radius:9px;padding:9px 4px;font-family:inherit;
+  font-size:.82rem;font-weight:600;color:var(--ink3);cursor:pointer;
+}
+.seg button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
+  bottom:calc(78px + var(--safe-b));z-index:80;
+  background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:12px;
+  font-size:.85rem;font-weight:500;opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;max-width:88vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (min-width:620px){
+  main{max-width:600px;margin:0 auto}
+  .top{max-width:600px;margin:0 auto}
+  .kpis{grid-template-columns:repeat(4,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* 알림 진단 출력 */
+.diag{
+  background:var(--surface2);border:1px solid var(--line);border-radius:11px;
+  padding:12px 13px;margin:10px 0 0;font-size:.76rem;line-height:1.55;
+  font-family:ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;
+  color:var(--ink2);
+}
+
+/* ---- 검증 지표 ---- */
+.mrows{display:flex;flex-direction:column;gap:0;margin-top:8px}
+.mrow{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--line2);
+}
+.mrow:last-child{border-bottom:0}
+.mrow .mk{font-size:.83rem;color:var(--ink2);flex:0 0 auto}
+.mrow .mv{font-size:.95rem;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.mrow .ms{display:block;font-size:.72rem;color:var(--ink3);font-weight:400;margin-top:2px}
+.mnotes{margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.mnote{
+  font-size:.76rem;line-height:1.5;color:var(--ink2);
+  background:var(--down-bg);border-radius:8px;padding:8px 10px;
+}
+.msub{margin-top:14px}
+.msub h3{
+  font-size:.79rem;font-weight:600;color:var(--ink3);
+  margin:0 0 2px;letter-spacing:.01em;
+}
+
+/* ============================================================
+   이 앱 전용 추가 — 위쪽 공용 클래스는 이름을 바꾸지 않는다.
+   여기 있는 것만 이 앱에서 새로 쓰는 클래스다.
+   ============================================================ */
+
+/* 요약 탭의 그룹 표 — 종목 하나를 두 줄로 그린다.
+     1줄(.g-r1) : 종목명 + 자산군. 다섯 칸 폭을 다 쓰므로 긴 이름도 대개 한 줄에 든다.
+     2줄(.g-r2) : 종목 칸엔 코드만, 나머지 네 칸에 매수금액·현재가·수량·수익률.
+   한 줄짜리 표일 때는 종목명이 폭을 먹어 375px 폰에서 수량·수익률이 화면 밖으로
+   밀려났다. 수익률이 가장 먼저 봐야 할 칸이라 가로 스크롤 뒤에 숨기면 안 된다.
+   .gtable 의 가로 스크롤은 320px 같은 아주 좁은 폰을 위한 안전장치로만 남긴다.
+   (body 를 overflow-x:hidden 이 아니라 clip 으로 자르는 이유: hidden 은 body 를
+    스크롤 컨테이너로 만들어 sticky 헤더가 흔들린다. clip 은 그러지 않는다.) */
+body{overflow-x:clip}
+.gtable{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.gtable table{width:100%;min-width:288px;border-collapse:collapse}
+.gtable th{
+  font-size:.66rem;font-weight:600;color:var(--ink3);text-align:right;
+  padding:0 0 7px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+.gtable td{
+  font-size:.8rem;text-align:right;vertical-align:baseline;white-space:nowrap;
+  letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;   /* 숫자 폭을 고정해 자릿수가 흔들리지 않게 */
+}
+.gtable th+th,.gtable td+td{padding-left:8px}
+.gtable th:first-child,.gtable td:first-child{text-align:left}
+.gtable .g-r1 td{padding:10px 0 2px;white-space:normal;line-height:1.35}
+.gtable .g-r2 td{padding:0 0 10px;border-bottom:1px solid var(--line2)}
+.gtable tbody tr.g-r2:last-child td{border-bottom:none}
+.g-nm{font-size:.84rem;font-weight:600}
+.g-as{font-size:.68rem;color:var(--ink3);margin-left:6px;white-space:nowrap}
+.g-cd{                                   /* 2줄 첫 칸: 종목코드 */
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:.68rem!important;color:var(--ink3);width:1%;
+}
+/* 320px 대 아주 좁은 폰: 여백과 글자를 한 단계 줄여 다섯 칸을 스크롤 없이 넣는다.
+   이 폭에서는 카드 안쪽이 256px 뿐이라 그대로 두면 표만 32px 옆으로 밀린다. */
+@media (max-width:340px){
+  main{padding-left:8px;padding-right:8px}
+  #groupCards .card{padding-left:11px;padding-right:11px}
+  .gtable table{min-width:0}
+  .gtable td{font-size:.74rem;letter-spacing:-.02em}
+  .gtable th+th,.gtable td+td{padding-left:5px}
+  .g-cd{font-size:.62rem!important}
+}
+
+/* 카드 제목 줄 — 왼쪽 제목, 오른쪽 한 줄 요약(종목 수·수익률 등) */
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.card-head h2{margin:0}
+.card-head .hd-r{font-size:.79rem;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card-head .hd-r .cnt{color:var(--ink3);font-weight:500;margin-right:7px}
+
+/* 그룹 표 아래 소계 행 — .grid3 와 같은 톤으로, 좁은 화면에선 2×2 */
+.gsub{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:9px 10px;
+  margin-top:11px;padding-top:11px;border-top:1px solid var(--line);
+}
+.gsub .k{font-size:.7rem;color:var(--ink3);display:block}
+.gsub .v{
+  font-size:.93rem;font-weight:650;display:block;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* 내일의 전략 입력칸 — 자동저장하지 않으므로 넉넉히 보이게 두고 세로만 늘린다 */
+textarea{
+  font-family:inherit;font-size:.95rem;line-height:1.6;padding:11px 13px;
+  border-radius:11px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);width:100%;
+  min-height:120px;resize:vertical;
+}
+textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
+/* 카드 맨 아래에 붙는 안내(저장 시각 등)는 아래 여백이 필요 없다 */
+.card>.hint:last-child{margin:8px 0 0}
+
+/* 현재가 한 줄 입력 (요약 탭 「관리」 안) */
+.fillrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line2)}
+.fillrow:last-child{border-bottom:none}
+.fillrow .fl{min-width:0;flex:1}
+.fillrow .fn{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fillrow .fs{font-size:.7rem;color:var(--ink3)}
+.price-input{
+  width:112px;flex:none;text-align:right;padding:9px 11px;font-size:.92rem;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+}
+/* 눌러서 시트를 여는 목록 행 */
+.item.tap{cursor:pointer}
+.item.tap:active{opacity:.55}
+
+/* 시세가 오래됐을 때처럼 주의를 끌어야 하는 안내 */
+.notice.warn{border-left-color:var(--warn);background:var(--warn-bg);color:var(--ink2)}
+
+/* 성과 탭 — 그룹별 비중 가로 누적 막대.
+   색은 토큰만 쓴다. app.js 가 인라인 style 로 배경을 줘도 되도록 span 자체는 색을 비워둔다. */
+/* 색이 빨강·파랑이면 안 되는 이유: 이 앱에서 빨강은 수익, 파랑은 손실이다.
+   범주 색으로 쓰면 월중 칸이 '수익', 월말 칸이 '손실' 로 읽힌다.
+   그래서 한 가지 무채색의 명도 단계로 칠하고, 칸 사이에 틈을 둬서 구분한다.
+   토큰이 라이트/다크에서 알아서 뒤집히므로 두 모드 모두 맞다. */
+:root{
+  --g-mid:var(--ink2);
+  --g-end:var(--ink3);
+  --g-etc:#bcc2cb;                /* 고정색: color-mix 를 모르는 구형 사파리에서 막대가 비지 않게 */
+  --g-cash:var(--line);
+}
+.stackbar{display:flex;gap:2px;height:14px;border-radius:99px;overflow:hidden;margin:4px 0 10px}
+.stackbar span{display:block;height:100%;min-width:0}
+.stackbar .sb-mid{background:var(--g-mid)}
+.stackbar .sb-end{background:var(--g-end)}
+.stackbar .sb-etc{background:var(--g-etc)}
+.stackbar .sb-cash{background:var(--g-cash)}
+/* 누적 막대용 범례는 선이 아니라 네모가 어울린다 */
+.legend.box i{width:11px;height:11px;border-radius:3px}
+
+/* 막대차트 — lineChart 와 같은 SVG 안에서 쓴다 */
+.chart .barr{fill:var(--brand)}
+.chart .barr.pos{fill:var(--up)}
+.chart .barr.neg{fill:var(--down)}
+
+@media (min-width:620px){
+  .gsub{grid-template-columns:repeat(4,1fr)}   /* 넓은 화면에선 소계 4개를 한 줄로 */
+}
+
+/* 원화는 달러보다 자릿수가 훨씬 길다(2억 4천만 = 아홉 자리 + "원").
+   공용 KPI 글자 크기를 그대로 두면 절반 폭 카드에서 끝이 다음 줄로 떨어진다.
+   클래스 이름은 그대로 두고, 값 글자만 화면 폭에 맞춰 줄인다. */
+.kpi .v{font-size:clamp(.98rem,4.3vw,1.32rem);white-space:nowrap}
+
+/* 다크 모드의 '기타' 막대 색 (위 --g-etc 의 짝) */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--g-etc:#4d5461}}
+:root[data-theme="dark"]{--g-etc:#4d5461}
+
+/* 요약 탭 KPI — 총금액은 한 줄을 다 쓰고 크게, 아래에 평가손익·월 배당 두 칸.
+   평가손익 밑의 수익률(.v2)은 보조 글씨보다 크게, 금액과 같은 색으로 쓴다. */
+.kpi.wide{grid-column:1 / -1}
+.kpi.wide .v{font-size:clamp(1.35rem,6.4vw,1.75rem)}
+.kpi .v2{display:block;margin-top:2px;font-size:1rem;font-weight:650;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums}
+
+/* 버튼 두 개 나란히 */
+.btns2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.mt8{margin-top:8px}
+/* 금액·날짜 두 칸을 한 줄에 — date 칸이 폭을 다 먹지 않게 나눈다 */
+.row input[type="date"]{flex:1;min-width:0}
+
+/* ============================================================
+   요약 탭 종목표 — 증권사 잔고 화면과 같은 형식 (2026-09-16)
+   한 칸에 두 줄(윗줄/아랫줄)을 짝지어 넣고, 칸이 많아 옆으로 민다.
+   종목명 칸만 왼쪽에 붙여 두어(sticky) 밀어도 어느 줄인지 알 수 있게 한다.
+   ============================================================ */
+.btable{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.btable table{border-collapse:collapse;width:max-content;min-width:100%}
+.btable th{
+  font-size:.66rem;font-weight:600;color:var(--ink3);text-align:right;
+  padding:0 0 7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top;
+}
+.btable td{
+  font-size:.8rem;text-align:right;padding:9px 0 9px 10px;white-space:nowrap;
+  border-bottom:1px solid var(--line2);vertical-align:top;font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+.btable tbody tr:last-child td{border-bottom:none}
+/* 짝의 아랫줄 — 윗줄보다 흐리고 작게 (증권사 화면과 같은 위계) */
+.btable .b2{display:block;font-size:.72rem;color:var(--ink3);font-weight:400;margin-top:1px}
+.btable th .b2{font-size:.66rem}
+/* 종목명 칸: 왼쪽 고정. 배경을 깔아야 밀린 숫자가 글자 밑으로 비쳐 보이지 않는다. */
+.btable .bn{
+  position:sticky;left:0;z-index:1;background:var(--surface);
+  text-align:left;padding-left:0;padding-right:10px;
+  white-space:normal;width:118px;min-width:118px;max-width:118px;
+}
+.btable td.bn{box-shadow:1px 0 0 var(--line2)}
+.btable th.bn{box-shadow:1px 0 0 var(--line)}
+.btable .bn .g-nm{font-size:.8rem;font-weight:600;line-height:1.3;display:block}
+
+/* ============================================================
+   요약 탭 하나로 합침 (2026-09-16) — 체결 탭 삭제
+   ============================================================ */
+
+/* 종목 줄을 누르면 매수·매도 시트가 열린다. 눌리는 곳이라는 표시는
+   :active 의 옅어짐 하나로 충분하다 — 화살표를 넣으면 칸이 하나 더 는다. */
+.btable tr.tap{cursor:pointer}
+.btable tr.tap:active td{opacity:.55}
+
+/* 그룹 카드 바로 아래 붙는 버튼 줄. 카드의 아래 여백(12px)과 겹치지 않게 위 여백을 지운다. */
+#tab-sum > .btns2{margin:0 0 12px}
+
+/* 「관리」 — 자주 쓰지 않는 입력(현금·배당·현재가·마감)을 접어 둔다.
+   요약 한 탭에 다 넣으면서 화면이 길어지는 것을 막으려는 것이다.
+   details 의 기본 삼각형은 브라우저마다 달라서 지우고 ▾ 를 직접 그린다. */
+details.fold{padding:0}
+details.fold > summary{
+  list-style:none;cursor:pointer;padding:15px 17px;
+  font-size:.95rem;font-weight:600;letter-spacing:-.01em;
+  display:flex;align-items:center;justify-content:space-between;
+}
+details.fold > summary::-webkit-details-marker{display:none}
+details.fold > summary::after{content:"▾";color:var(--ink3);font-size:.78rem}
+details.fold[open] > summary::after{content:"▴"}
+details.fold > summary:active{opacity:.6}
+.fold-body{padding:0 17px 17px}
+
+/* 묶음 안의 작은 제목. 카드 제목(h2)보다 한 단 낮다. */
+.fold-body .sect{padding-top:15px;border-top:1px solid var(--line2)}
+.fold-body .sect:first-child{padding-top:3px;border-top:none}
+.fold-body h3{font-size:.85rem;font-weight:600;margin:0 0 9px;letter-spacing:-.01em}
+.fold-body .card-head{margin-bottom:9px}
+.fold-body .card-head h3{margin:0}
+.fold-body > .btn.full{margin-top:15px}
+
+/* ============================================================
+   계좌 탭 여러 개 (2026-09-16 ISA 추가)
+   ============================================================ */
+
+/* 계좌 수만큼 칸이 늘어나는 세그먼트 (성과 탭의 계좌 선택).
+   .seg 는 4칸 고정이라 계좌가 2개면 오른쪽 절반이 비어 보인다. */
+.seg.auto{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}
+
+/* 시트 제목 옆의 계좌 이름. 같은 종목(예: KODEX 미국배당커버드콜액티브)을
+   퇴직연금과 ISA 양쪽에 들고 있어서, 어느 계좌를 고치는지 보여야 한다. */
+.sheet-acct{
+  margin-left:8px;font-size:.72rem;font-weight:600;color:var(--ink3);
+  background:var(--surface2);border-radius:999px;padding:3px 9px;
+  vertical-align:middle;white-space:nowrap;
+}
+
+/* ============================================================
+   계좌 고르는 칩 줄 (2026-09-16 — 계좌 6개가 되며 하단 탭에서 분리)
+   ============================================================ */
+
+/* 합계 한 줄 — 칩 위에. 계좌가 여섯 개면 "다 합치면 얼마인가"가 가장 먼저 궁금해진다. */
+.acct-total{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 3px 8px}
+.acct-total .k{font-size:.73rem;color:var(--ink3);flex:none}
+.acct-total .v{font-size:1.06rem;font-weight:700;letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.acct-total .v2{font-size:.78rem;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 칩은 폭에 맞춰 줄바꿈된다 — 375px 에서 3개씩 두 줄, 넓은 화면에선 한 줄.
+   계좌가 더 늘어도 줄만 늘어나므로 다시 손댈 일이 없다. */
+.acctbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(102px,1fr));
+  gap:7px;margin-bottom:12px}
+.chip{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:8px 10px;text-align:left;font-family:inherit;cursor:pointer;
+  min-width:0;box-shadow:var(--shadow);
+}
+.chip .cn{display:block;font-size:.72rem;font-weight:600;color:var(--ink3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .cv{display:block;font-size:.82rem;font-weight:650;color:var(--ink);margin-top:2px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.on{background:var(--ink);border-color:var(--ink)}
+.chip.on .cn{color:color-mix(in srgb,var(--bg) 70%,transparent)}
+.chip.on .cv{color:var(--bg)}
+.chip:active{transform:scale(.98)}
+
+/* 성과 탭의 계좌 고르기도 같은 칩을 쓴다 (금액 없이 이름만).
+   .seg 는 칸이 고정이라 여섯 개가 들어가면 글자가 잘린다. */
+.acctbar.names .cv{display:none}
+
+/* 계좌별 비중 막대 — 계좌 수만큼 무채색 단계.
+   범주 색에 빨강·파랑을 쓰면 안 되는 이유는 위 --g-* 와 같다(빨강=수익, 파랑=손실).
+   color-mix 대신 고정값을 쓰는 것도 같은 이유 — 구형 사파리에서 막대가 비어 버린다. */
+:root{
+  --a1:#3d4450; --a2:#5a636f; --a3:#7a838f;
+  --a4:#9aa3af; --a5:#bcc2cb; --a6:#d8dce2;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --a1:#cfd6e0; --a2:#aeb6c2; --a3:#8b93a0;
+    --a4:#6b7381; --a5:#4d5461; --a6:#363c47;
+  }
+}
+:root[data-theme="dark"]{
+  --a1:#cfd6e0; --a2:#aeb6c2; --a3:#8b93a0;
+  --a4:#6b7381; --a5:#4d5461; --a6:#363c47;
+}

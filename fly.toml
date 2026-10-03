@@ -1,0 +1,45 @@
+# Fly.io 배포 설정 — 순서는 docs/install-cloud.md 참고
+#   flyctl apps create jonghap-gyejwa
+#   flyctl volumes create jonghap_data --size 1 --region nrt -a jonghap-gyejwa
+#   flyctl secrets set PEN_PASSWORD='...' -a jonghap-gyejwa
+#   flyctl deploy --ha=false -a jonghap-gyejwa
+app = "jonghap-gyejwa"
+primary_region = "nrt"          # 도쿄 — 한국에서 가장 가까운 리전
+
+[build]
+
+[env]
+  TZ = "Asia/Seoul"
+  PEN_HTTPS = "1"               # https 로만 열리므로 로그인 쿠키에 secure 를 켠다
+
+# 보유 상태·기록이 재배포해도 남아야 하므로 영구 볼륨에 둔다.
+# 볼륨은 머신 하나에만 붙는다 — 머신을 2대로 늘리면 16:05 기록이 두 번 돌고
+# 볼륨이 둘로 갈라진다. 그래서 배포할 때 --ha=false 로 한 대만 둔다.
+[[mounts]]
+  source = "jonghap_data"
+  destination = "/app/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false     # 평일 16:05 스케줄러가 돌아야 하므로 절대 재우지 않는다
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8080
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"

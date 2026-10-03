@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+apscheduler>=3.10
+pywebpush>=1.14
+PyYAML>=6.0

@@ -1,0 +1,9 @@
+data/
+__pycache__/
+*.pyc
+secrets.json
+.kis_token_cache.json
+*.bat
+docs/
+tests/
+.git/
