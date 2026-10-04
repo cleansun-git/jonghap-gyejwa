@@ -47,11 +47,27 @@
 
 ## 설치
 
+Python 3.10 이상이 필요합니다. 네 줄이면 끝납니다.
+
 ```bash
+git clone https://github.com/cleansun-git/jonghap-gyejwa.git
+cd jonghap-gyejwa
 pip install -r requirements.txt
+python -m uvicorn web.app:app --port 8010
 ```
 
-Python 3.10 이상이면 됩니다.
+브라우저에서 `http://localhost:8010` 을 열면 **샘플 데이터가 든 화면이 바로 뜹니다.**
+API 키도, 로그인도 필요 없습니다. 자기 계좌로 바꾸는 방법은 아래
+[시드 데이터](#시드-데이터) 에 있습니다.
+
+> 비공개 저장소라 `git clone` 에 접근 권한이 필요합니다. 권한이 없으면
+> GitHub 에서 **Code > Download ZIP** 으로 받아 압축을 풀어도 똑같이 됩니다.
+
+설치가 잘 됐는지 보려면:
+
+```bash
+python tests/test_accounts.py
+```
 
 ## 실행
 
