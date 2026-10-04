@@ -1,0 +1,17 @@
+# 줄바꿈을 저장소 안에서 LF 로 고정한다.
+#
+# Windows 의 core.autocrlf=true 는 체크아웃할 때 파일을 CRLF 로 바꾼다. 그러면 이 저장소를
+# 받는 사람마다 로컬 줄바꿈이 달라지고, 한 파일 안에 LF 와 CRLF 가 섞이면 diff 가 통째로
+# 바뀐 것처럼 보인다. 아래 한 줄이 그 변환을 끈다 — 개인 설정과 무관하게 항상 LF 다.
+* text=auto eol=lf
+
+# 배치 파일만 예외로 CRLF 다. 명령 프롬프트가 LF 만 있는 .bat 를 잘못 읽는 일이 있다.
+# (지금 이 저장소에는 .bat 가 없지만, 나중에 더할 때 이 규칙이 먼저 있어야 한다)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 바이너리 — 줄바꿈을 건드리면 파일이 깨진다.
+# `text=auto` 가 대개 알아서 걸러내지만, 아이콘은 확실히 못 박아 둔다.
+*.png binary
+*.ico binary
