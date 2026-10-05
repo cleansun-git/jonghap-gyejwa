@@ -60,9 +60,6 @@ python -m uvicorn web.app:app --port 8010
 API 키도, 로그인도 필요 없습니다. 자기 계좌로 바꾸는 방법은 아래
 [시드 데이터](#시드-데이터) 에 있습니다.
 
-> 비공개 저장소라 `git clone` 에 접근 권한이 필요합니다. 권한이 없으면
-> GitHub 에서 **Code > Download ZIP** 으로 받아 압축을 풀어도 똑같이 됩니다.
-
 설치가 잘 됐는지 보려면:
 
 ```bash
